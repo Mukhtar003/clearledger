@@ -14,6 +14,7 @@ import { useConfirmDialogStore } from "@/store/confirmDialog";
 import { PoolClient, type SimulationResult } from "@clearledger/sdk";
 import { Address, nativeToScVal } from "@stellar/stellar-sdk";
 import { formatAmount } from "@/lib/assets";
+import { TxHistory } from "@/components/shared/TxHistory";
 
 const poolContractID = process.env.NEXT_PUBLIC_POOL_CONTRACT_ID || "";
 const STROOPS_PER_UNIT = 10_000_000;
@@ -325,6 +326,22 @@ export default function LPDashboard() {
             </button>
           </form>
         </div>
+        {address && (
+          <section aria-labelledby="lp-history-heading" className="space-y-2">
+            <div>
+              <h2
+                id="lp-history-heading"
+                className="text-sm font-bold uppercase tracking-wider text-white"
+              >
+                Deposit and Withdrawal History
+              </h2>
+              <p className="text-xs text-slate-500">
+                Confirmed Stellar account transactions; recent ledger activity may take a moment to appear.
+              </p>
+            </div>
+            <TxHistory address={address} poolOnly />
+          </section>
+        )}
       </div>
     </PageLayout>
   );
