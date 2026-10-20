@@ -149,6 +149,24 @@ export default function LPDashboard() {
     Math.max(0, (typedStats?.utilizationRateBps ?? 0) / 100),
   );
   const sharePrice = formatSharePrice(typedStats?.sharePrice);
+  const enteredShares = Number(withdrawShares);
+  const previewShares =
+    Number.isFinite(enteredShares) && enteredShares > 0
+      ? BigInt(Math.floor(enteredShares * STROOPS_PER_UNIT))
+      : 0n;
+  const estimatedPositionValue =
+    position?.shares && previewShares > 0n
+      ? (position.usdcValue * previewShares) / position.shares
+      : 0n;
+  const availableLiquidity = typedStats?.availableLiquidity ?? 0n;
+  const estimatedWithdrawal =
+    estimatedPositionValue < availableLiquidity
+      ? estimatedPositionValue
+      : availableLiquidity;
+  const exceedsPosition = Boolean(
+    position?.shares && previewShares > position.shares,
+  );
+  const exceedsLiquidity = estimatedPositionValue > availableLiquidity;
 
   return (
     <PageLayout>
@@ -316,9 +334,39 @@ export default function LPDashboard() {
             <p className="text-xs text-slate-500">
               Available: {formatShareValue(position?.shares)}
             </p>
+            <div className="space-y-1 rounded border border-border/60 bg-slate-950/60 p-3 text-xs">
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-400">Estimated USDC withdrawal</span>
+                <span className="font-mono text-white">
+                  {formatShareValue(estimatedWithdrawal)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-400">Pool liquidity available</span>
+                <span className="font-mono text-white">
+                  {formatShareValue(availableLiquidity)}
+                </span>
+              </div>
+              <p className="pt-1 text-[10px] text-slate-500">
+                Estimate uses the latest indexed position and pool snapshot; the confirmed amount may change.
+              </p>
+              {(exceedsPosition || exceedsLiquidity) && (
+                <p role="alert" className="pt-1 text-[10px] text-amber-300">
+                  {exceedsPosition
+                    ? "Requested shares exceed your current position."
+                    : "Requested withdrawal exceeds current pool liquidity."}
+                </p>
+              )}
+            </div>
             <button
               type="submit"
-              disabled={isWithdrawing || !position?.shares}
+              disabled={
+                isWithdrawing ||
+                !position?.shares ||
+                previewShares <= 0n ||
+                exceedsPosition ||
+                exceedsLiquidity
+              }
               className="rounded border border-rose-500/60 px-4 py-2 font-semibold text-rose-300 disabled:opacity-50"
             >
               {isWithdrawing ? "Withdrawing..." : "Withdraw Shares"}
